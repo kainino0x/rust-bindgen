@@ -555,7 +555,7 @@ fn cstruct_to_rs(ctx: &mut GenCtx, name: String,
 
     let id = rust_type_id(ctx, name.clone());
     let struct_def = P(ast::Item { ident: ctx.ext_cx.ident_of(&id[..]),
-        attrs: vec!(mk_repr_attr(ctx, layout), mk_deriving_copy_attr(ctx, false)),
+        attrs: vec!(mk_repr_attr(ctx, layout), mk_deriving_copy_attr(ctx, false, false)),
         id: ast::DUMMY_NODE_ID,
         node: def,
         vis: ast::Public,
@@ -638,7 +638,7 @@ fn cunion_to_rs(ctx: &mut GenCtx, name: String, layout: Layout, members: Vec<Com
         empty_generics()
     );
     let union_id = rust_type_id(ctx, name.clone());
-    let union_attrs = vec!(mk_repr_attr(ctx, layout), mk_deriving_copy_attr(ctx, false));
+    let union_attrs = vec!(mk_repr_attr(ctx, layout), mk_deriving_copy_attr(ctx, false, false));
     let union_def = mk_item(ctx, union_id, def, ast::Public, union_attrs);
 
     let union_impl = ast::ItemImpl(
@@ -749,7 +749,7 @@ fn cenum_to_rs(ctx: &mut GenCtx, name: String, kind: IKind, enum_items: &[EnumIt
 
     items.push(P(ast::Item {
         ident: enum_name,
-        attrs: vec![mk_deriving_copy_attr(ctx, true), repr_attr],
+        attrs: vec![mk_deriving_copy_attr(ctx, true, true), repr_attr],
         id: ast::DUMMY_NODE_ID,
         node: ast::ItemEnum(ast::EnumDef { variants: variants }, empty_generics()),
         vis: ast::Public,
@@ -911,10 +911,15 @@ fn mk_repr_attr(ctx: &mut GenCtx, layout: Layout) -> ast::Attribute {
     })
 }
 
-fn mk_deriving_copy_attr(ctx: &mut GenCtx, clone: bool) -> ast::Attribute {
+fn mk_deriving_copy_attr(ctx: &mut GenCtx, clone: bool, cenum: bool) -> ast::Attribute {
     let mut words = vec!();
     if clone {
         words.push(ctx.ext_cx.meta_word(ctx.span, InternedString::new("Clone")));
+    }
+    if cenum {
+        words.push(ctx.ext_cx.meta_word(ctx.span, InternedString::new("Eq")));
+        words.push(ctx.ext_cx.meta_word(ctx.span, InternedString::new("PartialEq")));
+        words.push(ctx.ext_cx.meta_word(ctx.span, InternedString::new("Debug")));
     }
     words.push(ctx.ext_cx.meta_word(ctx.span, InternedString::new("Copy")));
 
